@@ -11,10 +11,7 @@ class Game(socketio.AsyncNamespace):
         for index in range(0, len(self._players)):
             
             if str(sid) == self._players[index]['sid']:
-                self._players[index] = {
-                    'nickname': str(nickname),
-                    'sid': str(sid)
-                }
+                self._players[index]['nickname'] = str(nickname)
                 playerFound = True
                 break
 
@@ -22,7 +19,9 @@ class Game(socketio.AsyncNamespace):
             
             self._players.append({
                 'nickname': str(nickname),
-                'sid': str(sid)
+                'sid': str(sid),
+                'vida': 100,
+                'pronto': False
             })
 
         new_message = {
@@ -34,6 +33,8 @@ class Game(socketio.AsyncNamespace):
 
         await self.emit('info', data = 'Seja bem vindo, ' + str(nickname) + ', esperamos que você se divirta', room = sid)
 
+        await self.emit('players', data = str(len(self._players)) + '/4')
+
     async def on_send_message(self, sid, message):
         for player in self._players:
             if str(sid) == player['sid']:
@@ -43,3 +44,22 @@ class Game(socketio.AsyncNamespace):
                 }
                 await self.emit('new_message', json.dumps(new_message))
                 break
+
+    async def on_disconnect(self, sid):
+        
+        for index in range(0, len(self._players)):
+            
+            if str(sid) == self._players[index]['sid']:
+
+                new_message = {
+                    'player': 'Servidor',
+                    'message': self._players[index]['nickname'] + ' saiu do jogo.'
+                }
+
+                await self.emit('new_message', data = json.dumps(new_message))
+
+                self._players.pop(index)
+                break
+
+        await self.emit('players', data = str(len(self._players)) + '/4')
+    
