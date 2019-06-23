@@ -21,6 +21,7 @@ class Game(socketio.AsyncNamespace):
                 'nickname': str(nickname),
                 'sid': str(sid),
                 'vida': 100,
+                'stamina': 100,
                 'pronto': False
             })
 
@@ -31,9 +32,15 @@ class Game(socketio.AsyncNamespace):
         
         await self.emit('new_message', data = json.dumps(new_message))
 
-        await self.emit('info', data = 'Seja bem vindo, ' + str(nickname) + ', esperamos que você se divirta', room = sid)
+        await self.emit('info', data = 'Seja bem vindo, ' + str(nickname) + ', esperamos que você se divirta.', room = sid)
 
         await self.emit('players', data = str(len(self._players)) + '/4')
+
+        if len(self._players) == 1:
+
+            await self.emit('send_info', json.dumps(self._players))
+
+            await self.emit('start_game', data = '')
 
     async def on_send_message(self, sid, message):
         for player in self._players:
