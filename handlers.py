@@ -1,5 +1,6 @@
 import socketio
 import asyncio
+import json
 
 class Game(socketio.AsyncNamespace):
     
@@ -29,7 +30,7 @@ class Game(socketio.AsyncNamespace):
             'message': 'Um novo companheiro se junta ao lobby, deem boas vindas ao ' + str(nickname)
         }
         
-        await self.emit('new_message', data = new_message)
+        await self.emit('new_message', data = json.dumps(new_message))
 
         await self.emit('info', data = 'Seja bem vindo, ' + str(nickname) + ', esperamos que você se divirta', room = sid)
 
@@ -40,5 +41,5 @@ class Game(socketio.AsyncNamespace):
                     'player': player['nickname'],
                     'message': str(message)
                 }
-                await self.emit('new_message', new_message)
+                await self.emit('new_message', json.dumps(new_message))
                 break
