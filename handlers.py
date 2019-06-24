@@ -6,7 +6,7 @@ from random import randint
 class Game(socketio.AsyncNamespace):
     
     _players = list()
-    _max_players = 2
+    _max_players = 4
     _dead_players = 0
     _player_turn = None
     _stamina_increase_by_pass = 20
@@ -123,7 +123,7 @@ class Game(socketio.AsyncNamespace):
 
             if str(sid) == player['sid']:
 
-                await self.emit('log', data = player['nickname'] + ' passou a vez. +' + str(self._stamina_increase_by_pass) + ' pts de stamina')
+                await self.emit('log', data = player['nickname'] + ' passou a vez.')
 
                 player['stamina'] += self._stamina_increase_by_pass
 
