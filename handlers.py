@@ -131,8 +131,6 @@ class Game(socketio.AsyncNamespace):
 
                     player['stamina'] = 100
 
-                await self.emit('send_info', json.dumps(self._players))
-
                 self._player_turn = (self._player_turn + 1) % len(self._players)
 
                 while not self._players[self._player_turn]['alive']:
@@ -143,6 +141,14 @@ class Game(socketio.AsyncNamespace):
         
         player = self._players[self._player_turn]
 
+        player['stamina'] += self._stamina_increase_by_pass
+
+        if player['stamina'] > 100:
+
+            player['stamina'] = 100
+
+        await self.emit('send_info', json.dumps(self._players))
+
         await self.emit('info', data = 'É a sua vez de jogar, ' + player['nickname'] + '.', room = player['sid'])
 
         await self.emit('set_turn', data = True, room = player['sid'])
@@ -152,4 +158,72 @@ class Game(socketio.AsyncNamespace):
         await self.emit('log', data = 'Quem joga nessa rodada é ' + player['nickname'] + '.')
 
     async def on_attack(self, sid, sid_target, id):
-        pass
+        
+        player = None
+        target_player = None
+        action = None
+
+        for pl in self._players:
+
+            if str(sid) == pl['sid']:
+
+                player = pl
+            
+            elif str(sid_target) == pl['sid']:
+
+                target_player = pl
+
+        for act in self._actions_list:
+
+            if str(act['id']) == str(id):
+
+                action = act
+
+        player['stamina'] -= action['cost']
+
+        target_player['vida'] -= action['damage']
+        
+        if target_player['vida'] <= 0:
+
+            target_player['vida'] = 0
+
+            target_player['alive'] = False
+
+        self._player_turn = (self._player_turn + 1) % len(self._players)
+
+        while not self._players[self._player_turn]['alive']:
+
+            self._player_turn = (self._player_turn + 1) % len(self._players)
+        
+        await self.emit('log', data = player['nickname'] + ' atacou ' + target_player['nickname'] + ' com um(a) ' + action['name'])
+
+        if not target_player['alive']:
+
+            await self.emit('info', data = 'Você morreu, ' + target_player['nickname'] + '.', room = target_player['sid'])
+
+            await self.emit('log', data = target_player['nickname'] + ' morreu.')
+
+            self._dead_players += 1
+
+        if self._dead_players == len(self._players) - 1:
+
+            await self.emit('log', data = player['nickname'] + ' ganhou a partida.')
+        
+            await self.emit('info', data = 'Parabéns, ' + player['nickname'] + ' você ganhou a partida.', room = player['sid'])
+
+            await self.emit('send_info', json.dumps(self._players))
+
+            return
+
+        player = self._players[self._player_turn]
+
+        await self.emit('log', data = 'Quem joga nessa rodada é ' + player['nickname'] + '.')
+        
+        await self.emit('info', data = 'É a sua vez de jogar, ' + player['nickname'] + '.', room = player['sid'])
+
+        await self.emit('set_turn', data = True, room = player['sid'])
+
+        await self.emit('set_turn', data = False, skip_sid = player['sid'])
+
+        await self.emit('send_info', json.dumps(self._players))
+
