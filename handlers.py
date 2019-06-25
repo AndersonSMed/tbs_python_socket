@@ -110,7 +110,12 @@ class Game(socketio.AsyncNamespace):
 
                 await self.emit('new_message', data = json.dumps(new_message))
 
+                if not self._players[index]['alive']:
+
+                    self._dead_players -= 1
+
                 self._players.pop(index)
+
                 break
 
         await self.emit('players', data = str(len(self._players)) + '/' + str(self._max_players))
